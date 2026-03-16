@@ -347,40 +347,49 @@
         await Task.Delay(200);
         await JsRuntime.InvokeVoidAsync("scrollWindowToBottom");
 
-        var streamManifest = await youtube.Videos.Streams.GetManifestAsync(youtubeUrl);
-        ProgressValue = 50;
-        ProgressString = "Grabbing Video Bytes - 50%";
-        ProgressStyle = $"width:{ProgressValue}%";
-        StateHasChanged();
-        if (mp3Flag)
+        try
         {
-            // ...or highest bitrate audio-only stream
-            streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(youtubeUrl);
+            ProgressValue = 50;
+            ProgressString = "Grabbing Video Bytes - 50%";
+            ProgressStyle = $"width:{ProgressValue}%";
+            StateHasChanged();
+            if (mp3Flag)
+            {
+                streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            }
+            else
+            {
+                streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
+            }
+
+            var filename = $"{Guid.NewGuid()}.{streamInfo.Container}";
+            var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, filename);
+            ProgressValue = 75;
+            ProgressString = "Converting Video Bytes - 75%";
+            ProgressStyle = $"width:{ProgressValue}%";
+            StateHasChanged();
+
+            await BlazorDownloadFileService.DownloadFileAsync(mp3Flag ? $"{video.Title}.mp3" : $"{video.Title}.mp4", File.ReadAllBytes(filename));
+            File.Delete(filename);
+            ProgressValue = 100;
+            ProgressString = mp3Flag ? "Audio Downloading" : "Video Downloading";
+            ProgressStyle = $"width:{ProgressValue}%";
+            DownloadComplete = true;
         }
-        else
+        catch (Exception ex)
         {
-            // Get highest quality muxed stream
-            streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
+            await JsRuntime.InvokeVoidAsync("alert", $"Download failed: {ex.Message}");
+            ProgressValue = 0;
+            ProgressStyle = "width:0%";
+            ProgressString = null;
         }
-
-        var filename = $"{Guid.NewGuid()}.{streamInfo.Container}";
-        var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
-        await youtube.Videos.Streams.DownloadAsync(streamInfo, filename);
-        // DownloadProgressList.Add(mp3Flag ? $"Downloading audio..." : $"Downloading video...");
-        ProgressValue = 75;
-        ProgressString = "Converting Video Bytes - 75%";
-        ProgressStyle = $"width:{ProgressValue}%";
-        StateHasChanged();
-
-        await BlazorDownloadFileService.DownloadFileAsync(mp3Flag ? $"{video.Title}.mp3" : $"{video.Title}.mp4", File.ReadAllBytes(filename));
-        File.Delete(filename);
-        // DownloadProgressList.Add("Download completed");
-        ProgressValue = 100;
-        ProgressString = mp3Flag ? "Audio Downloading": "Video Downloading";
-        ProgressStyle = $"width:{ProgressValue}%";
-        IsDownloadActive = false;
-        DownloadComplete = true;
-        StateHasChanged();
+        finally
+        {
+            IsDownloadActive = false;
+            StateHasChanged();
+        }
 
         await Task.Delay(200);
         await JsRuntime.InvokeVoidAsync("resetSelect");
@@ -425,6 +434,8 @@
         await Task.Delay(200);
         await JsRuntime.InvokeVoidAsync("scrollWindowToBottom");
 
+        try
+        {
         var streamManifest = await youtube.Videos.Streams.GetManifestAsync(VideoUrl);
         ProgressValue = 50;
         ProgressString = "Grabbing Video Bytes - 50%";
@@ -432,12 +443,10 @@
         StateHasChanged();
         if (mp3Flag)
         {
-            // ...or highest bitrate audio-only stream
             streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
         }
         else
         {
-            // Get highest quality muxed stream
             streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
         }
 
@@ -449,15 +458,26 @@
         ProgressString = "Converting Video Bytes - 75%";
         ProgressStyle = $"width:{ProgressValue}%";
         StateHasChanged();
-        
+
         await BlazorDownloadFileService.DownloadFileAsync(mp3Flag ? $"download.mp3" : $"download.mp4", File.ReadAllBytes(filename));
         File.Delete(filename);
         ProgressValue = 100;
         ProgressString = mp3Flag ? "Audio Downloading" : "Video Downloading";
         ProgressStyle = $"width:{ProgressValue}%";
-        IsDownloadActive = false;
         DownloadComplete = true;
-        StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", $"Download failed: {ex.Message}");
+            ProgressValue = 0;
+            ProgressStyle = "width:0%";
+            ProgressString = null;
+        }
+        finally
+        {
+            IsDownloadActive = false;
+            StateHasChanged();
+        }
 
         await Task.Delay(200);
         await JsRuntime.InvokeVoidAsync("resetSelectUrl");
