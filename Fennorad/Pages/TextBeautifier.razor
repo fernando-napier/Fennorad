@@ -22,22 +22,12 @@
 
     <div class="row center-stuff">
         <div class="col-12 col-md-8">
-            <textarea disabled=@IsBeautifyActive @bind=PlainString type="text" class="text-area" placeholder="{}" />
+            <textarea disabled=@IsBeautifyActive @bind-value=PlainString @bind-value:event="oninput" @onkeydown="OnKeyDown" type="text" class="text-area" placeholder="{}" />
         </div>
     </div>
     <div class="row center-stuff">
-        <div class="col-3 col-md-3">
-            <div class="custom-select" style="width:100px; margin-bottom:3px;">
-                <select class="form-select fixed-height" id="format" @bind=SelectedFormat>
-                    <option value="0">Format</option>
-                    <option value="json">JSON</option>
-                    <option value="xml">XML</option>
-                </select>
-                @*<button disabled=@IsBeautifyActive class="yt-float-child-element-right bg-info" style="width:100px;" @onclick="BeautifyString">Beautify</button>*@
-            </div>
-        </div>
-        <div class="col-3 col-md-3 offset-6 offset-md-0">
-            <button disabled=@IsBeautifyActive class="fixed-height bg-info float-right" style="width:100px;" @onclick="BeautifyString">Beautify</button>
+        <div class="col-12 col-md-8 d-flex justify-content-end">
+            <button disabled=@IsBeautifyActive class="fixed-height bg-info" style="width:100px;" @onclick="BeautifyString">Beautify</button>
         </div>
     </div>
 
@@ -119,9 +109,16 @@
     private string PrettyJson { get; set; }
     private string InvalidJson { get; set; }
     public string PlainString { get; set; }
-    public string SelectedFormat { get; set; }
     private bool IsBeautifyActive = false;
     private bool CopySuccess = false;
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if ((e.Code == "Enter" || e.Code == "NumpadEnter") && e.CtrlKey)
+        {
+            await BeautifyString();
+        }
+    }
 
     private async Task CopyContents()
     {
@@ -146,19 +143,18 @@
             return;
         }
 
-        if (SelectedFormat == null)
-        {
-            InvalidJson = "Pick a Format";
-
-        }
-        else if (SelectedFormat == "json")
+        var trimmed = PlainString.Trim();
+        if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
         {
             ParseJsonString();
         }
+        else if (trimmed.StartsWith("<"))
+        {
+            PrettyXml();
+        }
         else
         {
-
-            PrettyXml();
+            InvalidJson = "Could not detect format — input must start with { [ or <";
         }
 
         IsBeautifyActive = false;

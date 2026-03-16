@@ -72,7 +72,7 @@
                         }
                         <div class="row center-stuff">
                             <div class="row col-12 col-md-8" style="margin-bottom: 5px;">
-                                <input class="col-12 col-md-10" disabled=@IsDownloadActive style="height: 30px; margin-bottom: 7px;" @bind=SearchQuery type="text" placeholder="input search term">
+                                <input class="col-12 col-md-10" disabled=@IsDownloadActive style="height: 30px; margin-bottom: 7px;" @bind-value=SearchQuery @bind-value:event="oninput" @onkeydown="SearchOnKeyPress" type="text" placeholder="input search term">
                                 <div class="col-3 offset-9 col-md-2 offset-md-0" style="margin-bottom: 25px; height: 30px; padding-right:0px!important">
                                     <button class="float-right" disabled=@IsDownloadActive @onclick="SearchForVideos">Search</button>
                                 </div>
@@ -277,6 +277,14 @@
         else if (args.Value.ToString() == "audio")
         {
             await DownloadViaExplode(video, true);
+        }
+    }
+
+    private async Task SearchOnKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            await SearchForVideos();
         }
     }
 
