@@ -33,7 +33,16 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         AccessToken = Config.MapAccessToken;
-        var result = await JsRuntime.InvokeAsync<Location>("getGpsLocation");
+        Location result;
+        try
+        {
+            result = await JsRuntime.InvokeAsync<Location>("getGpsLocation");
+        }
+        catch
+        {
+            result = new Location { Lat = (float)39.8283, Long = (float)-98.5795 }; // center of US
+        }
+
         if (Options == null || result.Long != Options.Center.Lng || result.Lat != Options.Center.Lat)
         {
             UpdateCenter = true;
@@ -51,7 +60,6 @@
             StateHasChanged();
         }
         UpdateCenter = false;
-
     }
 }
     
